@@ -1,4 +1,4 @@
-import os
+import os, shutil
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 
@@ -10,12 +10,14 @@ REVIEWS_FOLDER = "reviews"
 
 EMOJIS = {"negative": "😠", "neutral": "😐", "positive": "😃"}
 
+
 def analyze_sentiment(text):
     tokens = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
     output = model(**tokens)
     sentiment_id = torch.argmax(output.logits, dim=1).item()
     sentiments = ["negative", "neutral", "positive"]
     return sentiments[sentiment_id]
+
 
 def process_reviews():
     if not os.path.exists(REVIEWS_FOLDER):
@@ -30,6 +32,13 @@ def process_reviews():
                 text = file.read().strip()
                 sentiment = analyze_sentiment(text)
                 print(f"📄 Файл: {filename} - Тональность: {sentiment} {EMOJIS[sentiment]}")
+
+            sentiment_folder = os.path.join("reviews", sentiment)
+            if not os.path.exists(sentiment_folder):
+                os.makedirs(sentiment_folder)
+            new_file_path = os.path.join(sentiment_folder, filename)
+            shutil.move(file_path, new_file_path)
+
 
 if __name__ == "__main__":
     process_reviews()
